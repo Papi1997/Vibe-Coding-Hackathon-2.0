@@ -149,7 +149,8 @@ Interactive dashboard with real-time statistics
 Intuitive member management interface
 Simple payment recording system
 Easy-to-use reminder functionality
-📄 License
+
+ License
 This project is open source and available under the MIT License.
 
  Developer
@@ -161,6 +162,6 @@ Font Awesome for the beautiful icons
 The open-source community for inspiration
 
  Support
-For support, email [developer email] or create an issue in this repository.
+For support, email [lordjarvis02@gmail.com] or create an issue in this repository.
 
 
