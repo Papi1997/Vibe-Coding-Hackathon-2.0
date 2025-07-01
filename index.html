@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChamaBot Pro - Smart Payment Reminder System</title>
+    <meta name="description" content="Automated WhatsApp bot for Chama payment reminders and contribution tracking">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1>ChamaBot Pro</h1>
+                        <p>Smart Payment Reminder System</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-whatsapp" onclick="sendWhatsAppReminders()">
+                        <i class="fab fa-whatsapp"></i>
+                        Send WhatsApp Reminders
+                    </button>
+                    <button class="btn btn-outline" onclick="sendSMS()">
+                        <i class="fas fa-phone"></i>
+                        Send SMS
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Total Members</span>
+                        <i class="fas fa-users stat-icon"></i>
+                    </div>
+                    <div class="stat-value" id="totalMembers">4</div>
+                    <div class="stat-description" id="activeMembers">3 active members</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Total Contributions</span>
+                        <i class="fas fa-dollar-sign stat-icon"></i>
+                    </div>
+                    <div class="stat-value" id="totalContributions">KES 45,000</div>
+                    <div class="stat-description">+15% from last month</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Pending Reminders</span>
+                        <i class="fas fa-bell stat-icon"></i>
+                    </div>
+                    <div class="stat-value" id="pendingMembers">1</div>
+                    <div class="stat-description">Due for payment this week</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Overdue Members</span>
+                        <i class="fas fa-chart-line stat-icon"></i>
+                    </div>
+                    <div class="stat-value" id="overdueMembers">1</div>
+                    <div class="stat-description">Require immediate attention</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <div class="tab-list">
+                    <button class="tab-button active" onclick="showTab('members')">Members</button>
+                    <button class="tab-button" onclick="showTab('contributions')">Contributions</button>
+                    <button class="tab-button" onclick="showTab('reminders')">Reminders</button>
+                    <button class="tab-button" onclick="showTab('analytics')">Analytics</button>
+                </div>
+
+                <!-- Members Tab -->
+                <div id="members-tab" class="tab-content active">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title-section">
+                                <h2>Member Management</h2>
+                                <p>Manage your chama members and their contact information</p>
+                            </div>
+                            <button class="btn btn-primary" onclick="showAddMemberForm()">
+                                <i class="fas fa-plus"></i>
+                                Add Member
+                            </button>
+                        </div>
+                        <div class="card-content">
+                            <div class="search-box">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" id="memberSearch" placeholder="Search members by name or phone..." oninput="filterMembers()">
+                            </div>
+
+                            <!-- Add Member Form -->
+                            <div id="addMemberForm" class="add-member-form hidden">
+                                <div class="form-grid">
+                                    <input type="text" id="newMemberName" placeholder="Member name">
+                                    <input type="text" id="newMemberPhone" placeholder="Phone number (+254...)">
+                                </div>
+                                <div class="form-actions">
+                                    <button class="btn btn-success" onclick="addMember()">Add Member</button>
+                                    <button class="btn btn-outline" onclick="hideAddMemberForm()">Cancel</button>
+                                </div>
+                            </div>
+
+                            <!-- Members List -->
+                            <div id="membersList" class="members-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contributions Tab -->
+                <div id="contributions-tab" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-dollar-sign"></i> Record New Payment</h2>
+                            <p>Track member contributions and update payment status</p>
+                        </div>
+                        <div class="card-content">
+                            <div class="payment-form">
+                                <select id="paymentMember">
+                                    <option value="">Select member</option>
+                                </select>
+                                <input type="number" id="paymentAmount" placeholder="Amount (KES)">
+                                <select id="paymentMethod">
+                                    <option value="">Payment method</option>
+                                    <option value="mpesa">M-Pesa</option>
+                                    <option value="bank">Bank Transfer</option>
+                                    <option value="cash">Cash</option>
+                                    <option value="airtel">Airtel Money</option>
+                                </select>
+                                <button class="btn btn-success" onclick="recordPayment()">Record Payment</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Monthly Target: KES 2,000</h2>
+                            <p>Track progress towards monthly contribution goals</p>
+                        </div>
+                        <div class="card-content">
+                            <div id="progressList" class="progress-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reminders Tab -->
+                <div id="reminders-tab" class="tab-content">
+                    <div class="reminder-actions">
+                        <div class="reminder-card">
+                            <div class="reminder-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <h3>Pending Members</h3>
+                            <div class="reminder-count" id="pendingCount">1</div>
+                            <button class="btn btn-warning" onclick="sendReminders('pending')">
+                                <i class="fab fa-whatsapp"></i>
+                                Send Reminders
+                            </button>
+                        </div>
+
+                        <div class="reminder-card">
+                            <div class="reminder-icon">
+                                <i class="fas fa-bell"></i>
+                            </div>
+                            <h3>Overdue Members</h3>
+                            <div class="reminder-count" id="overdueCount">1</div>
+                            <button class="btn btn-danger" onclick="sendReminders('overdue')">
+                                <i class="fas fa-phone"></i>
+                                Send Urgent
+                            </button>
+                        </div>
+
+                        <div class="reminder-card">
+                            <div class="reminder-icon">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+                            <h3>Bulk Messages</h3>
+                            <div class="reminder-count" id="allCount">4</div>
+                            <button class="btn btn-primary" onclick="sendReminders('all')">
+                                <i class="fab fa-whatsapp"></i>
+                                Send to All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Tab -->
+                <div id="analytics-tab" class="tab-content">
+                    <div class="analytics-grid">
+                        <div class="analytics-card">
+                            <h3>Total Collected</h3>
+                            <div class="analytics-value">KES 45,000</div>
+                            <div class="analytics-change">+12% from last month</div>
+                        </div>
+
+                        <div class="analytics-card">
+                            <h3>Average/Member</h3>
+                            <div class="analytics-value">KES 11,250</div>
+                            <div class="analytics-change">Out of 4 members</div>
+                        </div>
+
+                        <div class="analytics-card">
+                            <h3>Target Achievement</h3>
+                            <div class="analytics-value">141%</div>
+                            <div class="analytics-change">KES 8,000 target</div>
+                        </div>
+
+                        <div class="analytics-card">
+                            <h3>Collection Rate</h3>
+                            <div class="analytics-value">94%</div>
+                            <div class="analytics-change">Excellent performance</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <div class="toast-content">
+            <i class="toast-icon"></i>
+            <span class="toast-message"></span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
