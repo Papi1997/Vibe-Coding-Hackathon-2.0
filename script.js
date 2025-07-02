@@ -1,314 +1,309 @@
+// Authentication and User Management
+let currentUser = null;
+let users = []; // Will store registered users
 
-// Sample data
-let members = [
-    { id: 1, name: "Grace Wanjiku", phone: "+254712345678", totalContributed: 12000, status: "active" },
-    { id: 2, name: "John Kamau", phone: "+254723456789", totalContributed: 8000, status: "pending" },
-    { id: 3, name: "Mary Akinyi", phone: "+254734567890", totalContributed: 15000, status: "active" },
-    { id: 4, name: "Peter Mwangi", phone: "+254745678901", totalContributed: 10000, status: "overdue" }
-];
+// ============================
+// AUTHENTICATION FUNCTIONS
+// ============================
 
-// Load data from localStorage or use default
-function loadData() {
-    const savedMembers = localStorage.getItem('chamaMembers');
-    if (savedMembers) {
-        members = JSON.parse(savedMembers);
+// Simple password hashing (for demo purposes)
+function hashPassword(password) {
+    let hash = 0;
+    for (let i = 0; i < password.length; i++) {
+        const char = password.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
     }
-    updateStats();
-    renderMembers();
-    renderProgress();
-    updatePaymentOptions();
+    return hash.toString();
 }
 
-// Save data to localStorage
-function saveData() {
-    localStorage.setItem('chamaMembers', JSON.stringify(members));
-}
-
-// Show toast notification
-function showToast(message, type = 'success') {
-    const toast = document.getElementById('toast');
-    const icon = toast.querySelector('.toast-icon');
-    const messageEl = toast.querySelector('.toast-message');
+// Check authentication status
+function checkAuth() {
+    const savedUser = localStorage.getItem('currentUser');
+    const rememberMe = localStorage.getItem('rememberMe');
     
-    toast.className = `toast ${type} show`;
-    messageEl.textContent = message;
-    
-    // Set appropriate icon
-    switch(type) {
-        case 'success':
-            icon.className = 'toast-icon fas fa-check-circle';
-            break;
-        case 'info':
-            icon.className = 'toast-icon fas fa-info-circle';
-            break;
-        case 'error':
-            icon.className = 'toast-icon fas fa-exclamation-circle';
-            break;
+    if (savedUser && rememberMe === 'true') {
+        currentUser = JSON.parse(savedUser);
+        showMainApp();
+    } else {
+        showAuthModal();
     }
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
 }
 
-// Tab functionality
-function showTab(tabName) {
-    // Hide all tab contents
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    
-    // Remove active class from all tab buttons
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.classList.remove('active');
-    });
-    
-    // Show selected tab content
-    document.getElementById(`${tabName}-tab`).classList.add('active');
-    
-    // Add active class to clicked button
-    event.target.classList.add('active');
+// Show authentication modal
+function showAuthModal() {
+    document.getElementById('authModal').style.display = 'flex';
+    document.getElementById('mainApp').classList.add('hidden');
 }
 
-// Update statistics
-function updateStats() {
-    const totalMembers = members.length;
-    const activeMembers = members.filter(m => m.status === 'active').length;
-    const pendingMembers = members.filter(m => m.status === 'pending').length;
-    const overdueMembers = members.filter(m => m.status === 'overdue').length;
-    const totalContributions = members.reduce((sum, m) => sum + m.totalContributed, 0);
+// Show main application
+function showMainApp() {
+    document.getElementById('authModal').style.display = 'none';
+    document.getElementById('mainApp').classList.remove('hidden');
     
-    document.getElementById('totalMembers').textContent = totalMembers;
-    document.getElementById('activeMembers').textContent = `${activeMembers} active members`;
-    document.getElementById('pendingMembers').textContent = pendingMembers;
-    document.getElementById('overdueMembers').textContent = overdueMembers;
-    document.getElementById('totalContributions').textContent = `KES ${totalContributions.toLocaleString()}`;
-    
-    // Update reminder counts
-    document.getElementById('pendingCount').textContent = pendingMembers;
-    document.getElementById('overdueCount').textContent = overdueMembers;
-    document.getElementById('allCount').textContent = totalMembers;
+    if (currentUser) {
+        updateUserInterface();
+    }
 }
 
-// Render members list
-function renderMembers() {
-    const membersList = document.getElementById('membersList');
-    const searchTerm = document.getElementById('memberSearch').value.toLowerCase();
+// Update user interface with current user info
+function updateUserInterface() {
+    if (currentUser) {
+        const initials = currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase();
+        document.getElementById('userAvatar').textContent = initials;
+        document.getElementById('userName').textContent = currentUser.name;
+    }
+}
+
+// Handle registration
+function register(event) {
+    event.preventDefault();
     
-    const filteredMembers = members.filter(member => 
-        member.name.toLowerCase().includes(searchTerm) || 
-        member.phone.includes(searchTerm)
-    );
+    const name = document.getElementById('registerName').value.trim();
+    const email = document.getElementById('registerEmail').value.trim();
+    const phone = document.getElementById('registerPhone').value.trim();
+    const password = document.getElementById('registerPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const agreeTerms = document.getElementById('agreeTerms').checked;
     
-    if (filteredMembers.length === 0) {
-        membersList.innerHTML = `
-            <div style="text-align: center; padding: 2rem; color: #6b7280;">
-                <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 1rem; color: #d1d5db;"></i>
-                <p>No members found matching your search.</p>
-            </div>
-        `;
+    // Validation
+    if (!name || !email || !phone || !password || !confirmPassword) {
+        showToast('Please fill in all fields', 'error');
         return;
     }
     
-    membersList.innerHTML = filteredMembers.map(member => `
-        <div class="member-card">
-            <div class="member-content">
-                <div class="member-info">
-                    <div class="member-avatar">
-                        ${member.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div class="member-details">
-                        <h3>${member.name}</h3>
-                        <p>${member.phone}</p>
-                        <p class="member-contribution">KES ${member.totalContributed.toLocaleString()} contributed</p>
-                    </div>
-                </div>
-                <div class="member-actions">
-                    <span class="status-badge status-${member.status}">${member.status}</span>
-                    <button class="action-btn" onclick="callMember('${member.name}', '${member.phone}')" title="Call">
-                        <i class="fas fa-phone"></i>
-                    </button>
-                    <button class="action-btn whatsapp" onclick="sendWhatsApp('${member.name}')" title="WhatsApp">
-                        <i class="fab fa-whatsapp"></i>
-                    </button>
-                    <button class="action-btn" onclick="editMember(${member.id})" title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-// Render progress list
-function renderProgress() {
-    const progressList = document.getElementById('progressList');
-    const monthlyTarget = 2000;
-    
-    progressList.innerHTML = members.map(member => {
-        const progress = Math.min((member.totalContributed / monthlyTarget) * 100, 100);
-        const statusIcon = member.totalContributed >= monthlyTarget ? 'check-circle' : 
-                          member.totalContributed > 0 ? 'clock' : 'exclamation-triangle';
-        const statusText = member.totalContributed >= monthlyTarget ? 'Complete' : 
-                          member.totalContributed > 0 ? 'Partial' : 'Pending';
-        const statusColor = member.totalContributed >= monthlyTarget ? 'status-active' : 
-                           member.totalContributed > 0 ? 'status-pending' : 'status-overdue';
-        
-        return `
-            <div class="progress-item">
-                <div class="progress-info">
-                    <div class="progress-avatar">
-                        ${member.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div class="progress-details">
-                        <h3>${member.name}</h3>
-                        <p>KES ${member.totalContributed.toLocaleString()} / KES ${monthlyTarget.toLocaleString()}</p>
-                    </div>
-                </div>
-                <div class="progress-actions">
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${progress}%"></div>
-                    </div>
-                    <span class="status-badge ${statusColor}">
-                        <i class="fas fa-${statusIcon}"></i> ${statusText}
-                    </span>
-                    <span class="progress-percentage">${Math.round(progress)}%</span>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-// Update payment options
-function updatePaymentOptions() {
-    const paymentMember = document.getElementById('paymentMember');
-    paymentMember.innerHTML = '<option value="">Select member</option>' +
-        members.map(member => `<option value="${member.id}">${member.name}</option>`).join('');
-}
-
-// Add member form functions
-function showAddMemberForm() {
-    document.getElementById('addMemberForm').classList.remove('hidden');
-}
-
-function hideAddMemberForm() {
-    document.getElementById('addMemberForm').classList.add('hidden');
-    document.getElementById('newMemberName').value = '';
-    document.getElementById('newMemberPhone').value = '';
-}
-
-function addMember() {
-    const name = document.getElementById('newMemberName').value.trim();
-    const phone = document.getElementById('newMemberPhone').value.trim();
-    
-    if (!name || !phone) {
-        showToast('Please fill in both name and phone number', 'error');
+    if (password !== confirmPassword) {
+        showToast('Passwords do not match', 'error');
         return;
     }
     
-    const newMember = {
+    if (password.length < 8) {
+        showToast('Password must be at least 8 characters long', 'error');
+        return;
+    }
+    
+    if (!agreeTerms) {
+        showToast('Please agree to the Terms & Conditions', 'error');
+        return;
+    }
+    
+    // Check if user already exists
+    if (users.find(user => user.email === email)) {
+        showToast('An account with this email already exists', 'error');
+        return;
+    }
+    
+    // Create new user
+    const newUser = {
         id: Date.now(),
         name: name,
+        email: email,
         phone: phone,
-        totalContributed: 0,
-        status: 'pending'
+        password: hashPassword(password),
+        createdAt: new Date().toISOString()
     };
     
-    members.push(newMember);
-    saveData();
-    updateStats();
-    renderMembers();
-    renderProgress();
-    updatePaymentOptions();
-    hideAddMemberForm();
+    users.push(newUser);
+    saveUsers();
     
-    showToast(`${name} added to the chama!`);
+    showToast('Account created successfully! Please login.', 'success');
+    showLogin();
+    
+    // Clear form
+    document.getElementById('registerName').value = '';
+    document.getElementById('registerEmail').value = '';
+    document.getElementById('registerPhone').value = '';
+    document.getElementById('registerPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    document.getElementById('agreeTerms').checked = false;
 }
 
-// Filter members
-function filterMembers() {
-    renderMembers();
-}
-
-// Record payment
-function recordPayment() {
-    const memberId = document.getElementById('paymentMember').value;
-    const amount = parseFloat(document.getElementById('paymentAmount').value);
-    const method = document.getElementById('paymentMethod').value;
+// Handle login
+function login(event) {
+    event.preventDefault();
     
-    if (!memberId || !amount || !method) {
-        showToast('Please fill in all payment details', 'error');
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const rememberMe = document.getElementById('rememberMe').checked;
+    
+    if (!email || !password) {
+        showToast('Please enter email and password', 'error');
         return;
     }
     
-    const member = members.find(m => m.id == memberId);
-    if (member) {
-        member.totalContributed += amount;
+    // Find user
+    const user = users.find(u => u.email === email && u.password === hashPassword(password));
+    
+    if (user) {
+        currentUser = user;
         
-        // Update status based on contribution
-        if (member.totalContributed >= 2000) {
-            member.status = 'active';
-        } else if (member.totalContributed > 0) {
-            member.status = 'pending';
-        }
+        // Save session
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        localStorage.setItem('rememberMe', rememberMe.toString());
         
-        saveData();
-        updateStats();
-        renderMembers();
-        renderProgress();
+        showToast(`Welcome back, ${user.name}!`, 'success');
+        showMainApp();
         
         // Clear form
-        document.getElementById('paymentMember').value = '';
-        document.getElementById('paymentAmount').value = '';
-        document.getElementById('paymentMethod').value = '';
-        
-        showToast(`Payment of KES ${amount.toLocaleString()} recorded for ${member.name} via ${method}`);
-    }
-}
-
-// Member actions
-function callMember(name, phone) {
-    showToast(`Calling ${name} at ${phone}`, 'info');
-}
-
-function sendWhatsApp(name) {
-    showToast(`WhatsApp reminder sent to ${name}`);
-}
-
-function editMember(id) {
-    showToast('Edit functionality coming soon', 'info');
-}
-
-// Reminder functions
-function sendReminders(type) {
-    let message = '';
-    if (type === 'pending') {
-        const pendingCount = members.filter(m => m.status === 'pending').length;
-        message = `Reminders sent to ${pendingCount} pending members`;
-    } else if (type === 'overdue') {
-        const overdueCount = members.filter(m => m.status === 'overdue').length;
-        message = `Urgent reminders sent to ${overdueCount} overdue members`;
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('rememberMe').checked = false;
     } else {
-        message = `Reminders sent to all ${members.length} members`;
+        showToast('Invalid email or password', 'error');
     }
-    showToast(message);
 }
 
-// Header actions
-function sendWhatsAppReminders() {
-    showToast('Reminders sent to all pending members via WhatsApp!');
+// Handle password reset
+function resetPassword(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('resetEmail').value.trim();
+    
+    if (!email) {
+        showToast('Please enter your email address', 'error');
+        return;
+    }
+    
+    const user = users.find(u => u.email === email);
+    
+    if (user) {
+        showToast('Password reset link sent to your email (simulation)', 'success');
+        showLogin();
+        document.getElementById('resetEmail').value = '';
+    } else {
+        showToast('No account found with this email address', 'error');
+    }
 }
 
-function sendSMS() {
-    showToast('SMS reminders sent to overdue members!');
+// Handle logout
+function logout() {
+    currentUser = null;
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('rememberMe');
+    showToast('Logged out successfully', 'success');
+    showAuthModal();
+    hideUserDropdown();
+}
+
+// Toggle password visibility
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.nextElementSibling;
+    const icon = button.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+
+// Password strength checker
+function checkPasswordStrength(password) {
+    let strength = 0;
+    let feedback = '';
+    
+    if (password.length >= 8) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    
+    const strengthBar = document.getElementById('strengthBar');
+    const strengthText = document.getElementById('strengthText');
+    
+    if (!strengthBar || !strengthText) return;
+    
+    switch (strength) {
+        case 0:
+        case 1:
+            strengthBar.className = 'strength-bar weak';
+            feedback = 'Weak password';
+            break;
+        case 2:
+            strengthBar.className = 'strength-bar fair';
+            feedback = 'Fair password';
+            break;
+        case 3:
+        case 4:
+            strengthBar.className = 'strength-bar good';
+            feedback = 'Good password';
+            break;
+        case 5:
+            strengthBar.className = 'strength-bar strong';
+            feedback = 'Strong password';
+            break;
+    }
+    
+    strengthText.textContent = feedback;
+}
+
+// Form switching functions
+function showLogin() {
+    document.getElementById('loginForm').classList.remove('hidden');
+    document.getElementById('registerForm').classList.add('hidden');
+    document.getElementById('forgotPasswordForm').classList.add('hidden');
+    document.getElementById('authTitle').textContent = 'Login to ChamaBot Pro';
+}
+
+function showRegister() {
+    document.getElementById('loginForm').classList.add('hidden');
+    document.getElementById('registerForm').classList.remove('hidden');
+    document.getElementById('forgotPasswordForm').classList.add('hidden');
+    document.getElementById('authTitle').textContent = 'Create Your Account';
+}
+
+function showForgotPassword() {
+    document.getElementById('loginForm').classList.add('hidden');
+    document.getElementById('registerForm').classList.add('hidden');
+    document.getElementById('forgotPasswordForm').classList.remove('hidden');
+    document.getElementById('authTitle').textContent = 'Reset Password';
+}
+
+// User management functions
+function loadUsers() {
+    const savedUsers = localStorage.getItem('registeredUsers');
+    if (savedUsers) {
+        users = JSON.parse(savedUsers);
+    }
+}
+
+function saveUsers() {
+    localStorage.setItem('registeredUsers', JSON.stringify(users));
+}
+
+function toggleUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('hidden');
+}
+
+function hideUserDropdown() {
+    document.getElementById('userDropdown').classList.add('hidden');
 }
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
-    loadData();
-});
-
-// Auto-save data when page unloads
-window.addEventListener('beforeunload', function() {
-    saveData();
+    loadUsers();
+    checkAuth();
+    loadData(); // Load existing ChamaBot data
+    
+    // Add password strength checking
+    const registerPassword = document.getElementById('registerPassword');
+    if (registerPassword) {
+        registerPassword.addEventListener('input', function() {
+            checkPasswordStrength(this.value);
+        });
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const userMenu = document.querySelector('.user-menu');
+        const dropdown = document.getElementById('userDropdown');
+        
+        if (userMenu && !userMenu.contains(event.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
 });
