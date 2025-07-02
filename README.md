@@ -154,7 +154,7 @@ Easy-to-use reminder functionality
 This project is open source and available under the MIT License.
 
  Developer
-Papi1997 - Initial work - GitHub Profile
+Tonny Onwonga - Initial work - GitHub Profile
 
  Acknowledgments
 Vibe Coding Hackathon 2.0 organizers
